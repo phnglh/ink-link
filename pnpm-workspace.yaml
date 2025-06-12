@@ -1,4 +1,5 @@
 onlyBuiltDependencies:
   - '@biomejs/biome'
   - '@prisma/engines'
+  - bcrypt
   - prisma
