@@ -1,22 +1,27 @@
+import "dotenv/config"
 import { Server } from 'socket.io';
 import { app } from './app';
 import {createServer} from 'node:http';
 import { pubClient, subClient } from './redis';
 import { createAdapter } from '@socket.io/redis-adapter';
 import { registerSocketEvent } from './socket';
-import { connectPrisma } from './prisma';
+import { PrismaClient } from '../generated/prisma';
+
+export const prisma = new PrismaClient({
+ log: ['query', 'info', 'warn', 'error']
+});
+
 const PORT = process.env.PORT || 3000;
 
 const server = createServer(app);
 
-const io = new Server((server, {
+const io = new Server(server, {
   cors: {
     origin: "*"
   }
-}))
+})
 
 async function start() {
-   await connectPrisma()
   await pubClient.connect()
   await subClient.connect()
 
@@ -30,4 +35,11 @@ async function start() {
 
 }
 
-start()
+start().then(async () => {
+    await prisma.$connect();
+  })
+  .catch(async (e) => {
+    console.error(e);
+    await prisma.$disconnect();
+    process.exit(1);
+  });

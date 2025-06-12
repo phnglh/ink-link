@@ -5,6 +5,7 @@ import cors from 'cors'
 import compression from 'compression';
 
 const app: Application = express()
+
 app.use(cors())
 app.use(express.json())
 app.use(compression({
