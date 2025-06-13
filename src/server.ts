@@ -1,46 +1,52 @@
-import "dotenv/config"
+import 'dotenv/config';
 import { Server } from 'socket.io';
+import { createServer } from 'node:http';
+import errorhandler from 'errorhandler';
 import { app } from './app';
-import {createServer} from 'node:http';
 import { pubClient, subClient } from './redis';
 import { createAdapter } from '@socket.io/redis-adapter';
 import { registerSocketEvent } from './socket';
-import { PrismaClient } from '../generated/prisma';
-import logger from "./utils/logger";
+import { AppDataSource } from './data-source';
 
-const prisma = new PrismaClient({
- log: ['query', 'info', 'warn', 'error']
-});
+import logger from './utils/logger';
+import { loggerMiddleware } from './middlewares/logger.middleware';
 
 const PORT = process.env.PORT || 3000;
+
+app.use(loggerMiddleware);
+
+if (process.env.NODE_ENV === 'development') {
+  app.use(errorhandler());
+}
+
 
 const server = createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: "*"
-  }
-})
+    origin: '*',
+  },
+});
 
 async function start() {
-  await pubClient.connect()
-  await subClient.connect()
+  try {
+    await AppDataSource.initialize();
+    logger.info('✅ Database connected');
 
-  io.adapter(createAdapter(pubClient,subClient))
+    await pubClient.connect();
+    await subClient.connect();
+    logger.info('✅ Redis connected');
 
-  registerSocketEvent(io)
+    io.adapter(createAdapter(pubClient, subClient));
+    registerSocketEvent(io);
 
-  server.listen(PORT, () => {
-   logger.info(`🚀 Server is running at http://localhost:${PORT}`);
-});
-
+    server.listen(PORT, () => {
+      logger.info(`🚀 Server is running at http://localhost:${PORT}`);
+    });
+  } catch (e) {
+    logger.error('❌ Server failed to start', (e as Error).stack);
+    process.exit(1);
+  }
 }
 
-start().then(async () => {
-    await prisma.$connect();
-  })
-  .catch(async (e) => {
-  logger.error('❌ Server failed to start', e);
-  await prisma.$disconnect();
-  process.exit(1);
-});
+start();
