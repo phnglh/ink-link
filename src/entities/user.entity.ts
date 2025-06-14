@@ -1,33 +1,35 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from "typeorm"
-import { RefreshToken } from "./refresh-token.entity"
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from "typeorm";
+import { RefreshToken } from "./refresh-token.entity";
 
-@Entity('users')
+@Entity("users")
 export class User {
+	@PrimaryGeneratedColumn("uuid")
+	uid: string;
 
-    @PrimaryGeneratedColumn('uuid')
-    uid: string
+	@Column()
+	firstName: string;
 
-    @Column()
-    firstName: string
+	@Column()
+	lastName: string;
 
-    @Column()
-    lastName: string
+	@Column()
+	email: string;
 
-    @Column()
-    email: string
+	@Column()
+	password: string;
 
-    @Column()
-    password: string
- 
-    @Column({ default: true })
-    isActive: boolean
+	@Column({ default: true })
+	isActive: boolean;
 
-    @Column({ default: false })
-    isDeleted: boolean
+	@Column({ default: false })
+	isDeleted: boolean;
 
-    @Column({ default: false })
-    isBanned: boolean
+	@Column({ default: false })
+	isBanned: boolean;
 
-    @OneToMany(() => RefreshToken, (refreshToken) => refreshToken.user)
-    refreshTokens: RefreshToken[];
+	@OneToMany(
+		() => RefreshToken,
+		(refreshToken) => refreshToken.user,
+	)
+	refreshTokens: RefreshToken[];
 }

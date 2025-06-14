@@ -1,30 +1,43 @@
-import express from 'express'
-import type {Application, Response, Request} from 'express'
-import cors from 'cors'
-import compression from 'compression';
-const app: Application = express()
+import express, { Application } from "express";
+import { AppDataSource } from "./data-source";
+import { routes } from "./routes/routes";
+import { loggerMiddleware } from "./middlewares/logger.middleware";
+import errorHandler from "errorhandler";
+import compression from "compression";
+import logger from "./utils/logger";
+export default class App {
+	public app: Application;
 
-app.use(cors())
-app.use(express.json())
-app.use(express.urlencoded({ extended: true }));
-app.use(compression({
-  level: 6,
-  threshold: 100 * 1000
-}))
+	constructor() {
+		this.app = express();
+		this.setupMiddleware(); 
+		this.setupRoutes();
+		this.setupDatabase();
+	}
 
-app.get('/', (req: Request, res: Response) => {
-   res.json({
-    message: 'Hello from the Realtime Collab API!',
-  });
-});
+	private setupMiddleware(): void {
+		this.app.use(express.json());
+		this.app.use(express.urlencoded({ extended: true }));
+		this.app.use(compression({
+			level: 6,
+			threshold: 100*100
+		}))
+		this.app.use(loggerMiddleware)
+		this.app.use(errorHandler())
+	}
 
-app.get('/healcheck',(req: Request, res: Response)=> {
-  res.json({
-    message: "healcheck"
-  })
-})
+	private async setupDatabase(): Promise<void> {
+		try {
+			AppDataSource.initialize();
+			logger.info("Database connected successfully");
+		} catch (error) {
+			logger.error("Database connection error:", error);
+		}
+	}
 
-
-
-
-export {app}
+	private setupRoutes(): void {
+		for (const { path, router } of routes) {
+			this.app.use(path, router);
+		}
+	}
+}
