@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from "typeorm";
 import { RefreshToken } from "./refresh-token.entity";
+import { Document } from "./document.entity";
 
 @Entity("users")
 export class User {
@@ -26,6 +27,9 @@ export class User {
 
 	@Column({ default: false })
 	isBanned: boolean;
+
+	@OneToMany(() => Document, (document) => document.owner)
+  documents: Document[];
 
 	@OneToMany(
 		() => RefreshToken,
